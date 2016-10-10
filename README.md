@@ -12,4 +12,6 @@ or instance, you could compare: * The results coming back from 2 different GSAs.
 5. Tool can randomize which set of results shows up on which side so that users don't get biased after many votes.
 6. Voters can login and see their vote history and even change previous votes.
 
+# Users View Entering Votes
+
 ![alt text](https://raw.githubusercontent.com/mcplusa/sxse/master/downloads/images/side-by-side.jpg "Side by Side Search In Action")
