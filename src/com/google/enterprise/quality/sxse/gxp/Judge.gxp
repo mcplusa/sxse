@@ -1,0 +1,135 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.Judge"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.Set' />
+<gxp:import class='com.google.enterprise.quality.sxse.JudgmentDetails.Judgment' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.JudgmentServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.JudgmentServletDetails' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='query' type='String' />
+<gxp:param name='prevJudgment' type='Judgment' />
+<gxp:param name='details' type='JudgmentServletDetails' />
+<gxp:param name='querySetNames' type='Set{String}' />
+<gxp:param name='submitAction' type='String' default='null' />
+
+<gxp:abbr name='hasQuery' type='Boolean' expr='query != null'>
+<call:Page id='eval' title='Judge' onload='"tryAutoSubmit(" + submitAction + ")"'>
+  <script type='text/javascript'>
+    function setActionAndSubmit(action) {
+      document.getElementById('action').value = action;
+      document.mainForm.submit();
+    }
+
+    function tryAutoSubmit(submitAction) {
+      if (submitAction != null) {
+        setTimeout('setActionAndSubmit("' + submitAction + '")', 2000);
+      }
+    }
+  </script>
+
+  <gxp:eval expr='banner.write(user, JudgmentServlet.BANNER_LINK)' />
+ 
+  <gxp:nomsg>
+  <div id="results">
+  <form action='eval' method='post' name='mainForm'>
+    <!-- If user presses Enter, then most likely filled out field for next query. -->
+    <input type="hidden" id='action' name='action' value='COMPARE_QUERY' />
+    <gxp:if cond='hasQuery'>
+      <input type="hidden" name='query' expr:value='query' />
+    </gxp:if>
+
+    <gxp:eval expr='details.writeHeader()' />
+
+    <gxp:if cond='submitAction != null'>
+      <div class="errormsg">
+        <gxp:if cond='details.allowJudgment()'>
+          Results are the same, automatically submitting an
+          <span class="judgment">Equal</span> judgment.
+        <gxp:else />
+          Results are invalid, automatically passing on judgment.
+        </gxp:if>
+      </div>
+    </gxp:if>
+
+    <gxp:if cond='!hasQuery'>
+      <div class="errormsg">
+        No query sets to draw queries from exist.
+      </div>
+    <gxp:else />
+      <div>
+        Search results for
+        <gxp:if cond='prevJudgment == null'>
+          <span class="query"><gxp:eval expr='query'/></span>:
+        <gxp:elif cond='Judgment.FIRST_BETTER == prevJudgment' />
+          <span class="query"><gxp:eval expr='query'/></span>
+          (Your previous judgment was <span class="judgment">Policy A</span>):
+        <gxp:elif cond='Judgment.SECOND_BETTER == prevJudgment' />
+          <span class="query"><gxp:eval expr='query'/></span>
+          (Your previous judgment was <span class="judgment">Policy B</span>):
+        <gxp:elif cond='Judgment.EQUAL == prevJudgment' />
+          <span class="query"><gxp:eval expr='query'/></span>
+          (Your previous judgment was <span class="judgment">Equal</span>):
+        </gxp:if>
+      </div>
+
+      <gxp:eval expr='details.writeResults()' />
+    </gxp:if>
+
+    <gxp:if cond='submitAction == null'>
+      <div class="optgroup">
+        Specify a query to evaluate:
+        <input type="text" name='nextQuery' size='30' />
+        <button onclick='setActionAndSubmit("COMPARE_QUERY")'>Evaluate</button>
+      </div>
+
+      <gxp:if cond='hasQuery &amp;&amp; querySetNames != null'>
+        <div class="optgroup">
+          Specify a query set to evaluate a query from:
+          <select name='nextQuerySet'
+              onchange='setActionAndSubmit("COMPARE_QUERY_SET")'>
+            <option value='' selected='selected'>
+              Choose a Query Set
+            </option>
+            <gxp:loop var='querySetName' type='String' iterable='querySetNames'>
+              <option expr:value='querySetName'>
+                <gxp:eval expr='querySetName' />
+              </option>
+            </gxp:loop>
+          </select>
+        </div>
+      </gxp:if>
+    </gxp:if>
+
+    <gxp:eval expr='details.writeFooter()' />
+  </form>
+  </div>
+  </gxp:nomsg>
+</call:Page>
+</gxp:abbr>
+
+</gxp:template>

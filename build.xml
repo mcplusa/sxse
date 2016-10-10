@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="SxSE" default="jar">
+  <property name="src.dir" value="./src" />
+  <property name="build.dir" value="./build" />
+  <property name="genfiles.dir" value="./genfiles" />
+  <property name="lib.dir" value="./lib" />
+  <property name="jar.dir" value="." />
+
+  <property name="main-class" value="com.google.enterprise.quality.sxse.Sxse" />
+
+  <property name="base.pkg" value="com/google/enterprise/quality/sxse" />
+  <path id="sxse.thirdparty" description="Third party JAR files">
+    <pathelement path="${lib.dir}/google-collect-1.0-rc2.jar" />
+    <pathelement path="${lib.dir}/jdom.jar" />
+    <pathelement path="${lib.dir}/jetty-6.1.11.jar" />
+    <pathelement path="${lib.dir}/jetty-util-6.1.11.jar" />
+    <pathelement path="${lib.dir}/joda-time-1.5.2.jar" />
+    <pathelement path="${lib.dir}/servlet-api-2.5-6.1.11.jar" />
+  </path>
+
+  <taskdef name="gxpc" classname="com.google.gxp.compiler.ant.GxpcTask" />
+
+  <target name="init">
+    <mkdir dir="${build.dir}"/>
+  </target>
+
+  <target name="base" depends="init">
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           classpathref="sxse.thirdparty"
+           includes="${base.pkg}/*.java"
+           excludes="${base.pkg}/Sxse.java"
+           debug="on" debuglevel="lines,vars,source" />
+  </target>
+
+  <target name="input" depends="base">
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           classpathref="sxse.thirdparty"
+           includes="${base.pkg}/input/*.java"
+           debug="on" debuglevel="lines,vars,source" />
+  </target>
+
+  <target name="hashers" depends="base">
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           includes="${base.pkg}/hashers/*.java" />
+  </target>
+
+  <target name="storage" depends="base">
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           classpathref="sxse.thirdparty"
+           includes="${base.pkg}/storage/*.java" />
+  </target>
+
+  <target name="textstorage" depends="base,hashers,storage">
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           classpathref="sxse.thirdparty"
+           includes="${base.pkg}/storage/textstorage/*.java" />
+  </target>
+
+  <target name="gxps" depends="base">
+    <gxpc srcdir="${src.dir}"
+          srcpaths="${src.dir}"
+          includes="${base.pkg}/gxp/*.gxp"
+          destdir="${genfiles.dir}" />
+  </target>
+
+  <target name="servlets" depends="base,hashers,input,gxps,storage">
+    <javac destdir="${build.dir}"
+           classpathref="sxse.thirdparty"
+           debug="on" debuglevel="lines,vars,source">
+      <src path="${src.dir}" />
+      <src path="${genfiles.dir}" />
+    </javac>
+  </target>
+
+  <target name="sxse" depends="base,servlets,textstorage">
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           classpathref="sxse.thirdparty"
+           includes="${base.pkg}/Sxse.java"
+           debug="on" debuglevel="lines,vars,source" />
+  </target>
+
+  <target name="jar" depends="sxse">
+    <mkdir dir="${jar.dir}" />
+    <jar destfile="${jar.dir}/sxse.jar" basedir="${build.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="${main-class}" />
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="clean">
+    <delete includeemptydirs="true">
+      <fileset dir="${build.dir}" />
+    </delete>
+    <delete includeemptydirs="true">
+      <fileset dir="${genfiles.dir}" />
+    </delete>
+  </target>
+</project>

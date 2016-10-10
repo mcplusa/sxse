@@ -1,0 +1,71 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.ServerResults"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.List' />
+<gxp:import class='com.google.enterprise.quality.sxse.SearchResult' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.ServerJudgmentStrategy' />
+
+<gxp:param name='results' type='List{SearchResult}' />
+
+<gxp:nomsg>
+	<gxp:if cond='results == null'>
+	  <div class="noresults">No results could be retrieved.</div>
+	<gxp:else />
+	  <ol>
+	    <gxp:loop var='result' type='SearchResult' iterable='results'>
+	      <li>
+	        <gxp:attr name='class'>
+	          <gxp:if cond='result.isCrowded()'>
+	            result crowded
+	          <gxp:else/>
+	            result
+	          </gxp:if>
+	        </gxp:attr>
+
+          <div class="l">
+            <a expr:href='result.getUrl()'>
+              <gxp:eval expr='HtmlClosures.fromHtml(result.getTitle())' />
+            </a>
+          </div>
+
+          <gxp:abbr name='snippet' type='String' expr='result.getSnippet()'>
+          <gxp:if cond='!snippet.equals("")'>
+            <div class="s">
+              <gxp:eval expr='HtmlClosures.fromHtml(snippet.replace("&lt;br&gt;", " ").trim())' />
+            </div>
+          </gxp:if>
+          </gxp:abbr>
+
+          <div class="u">
+            <gxp:eval expr='ServerJudgmentStrategy.trimUrl(result.getUrl().toString())' />
+            -
+            <gxp:eval expr='result.getSize()' />
+          </div>
+	      </li>
+	    </gxp:loop>
+	  </ol>
+  </gxp:if>
+</gxp:nomsg>
+
+</gxp:template>

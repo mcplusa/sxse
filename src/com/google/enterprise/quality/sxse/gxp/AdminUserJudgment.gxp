@@ -1,0 +1,69 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.AdminUserJudgment"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.net.URLEncoder' />
+<gxp:import class='java.text.DateFormat' />
+<gxp:import class='java.util.Date' />
+<gxp:import class='com.google.enterprise.quality.sxse.SxseUtil' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet.QueryHistory' />
+
+<gxp:param name='dateFormatter' type='DateFormat' />
+<gxp:param name='userName' type='String' />
+<gxp:param name='queryJudgment' type='QueryHistory.QueryJudgment' />
+<gxp:param name='query' type='String' />
+
+<td>
+  <gxp:eval expr='dateFormatter.format(new Date(queryJudgment.getTimestamp()))' />
+</td>
+<td>
+  <gxp:abbr name='resultsId' type='String'
+      expr='queryJudgment.getResultsId()'>
+
+  <gxp:if cond='resultsId != null'>
+    <gxp:abbr name='firstProfileName' type='String'
+        expr='queryJudgment.getFirstProfileName()'>
+    <gxp:abbr name='secondProfileName' type='String'
+        expr='queryJudgment.getSecondProfileName()'>
+    <gxp:abbr name='judgment' type='String'
+        expr='queryJudgment.getJudgment()'>
+
+    <a expr:href='"users?userAction=VIEW_RESULTS" +
+        "&amp;userName=" + SxseUtil.urlEncode(userName) +
+        "&amp;query=" + SxseUtil.urlEncode(query) +
+        "&amp;firstProfileName=" + SxseUtil.urlEncode(firstProfileName) +
+        "&amp;secondProfileName=" + SxseUtil.urlEncode(secondProfileName) +
+        "&amp;judgment=" + SxseUtil.urlEncode(judgment) +
+        "&amp;resultsId=" + SxseUtil.urlEncode(resultsId)'>
+      <gxp:eval expr='queryJudgment.getChosenProfileName()' />
+    </a>
+
+    </gxp:abbr>
+    </gxp:abbr>
+    </gxp:abbr>
+  </gxp:if>
+
+  </gxp:abbr>
+</td>
+
+</gxp:template>
+

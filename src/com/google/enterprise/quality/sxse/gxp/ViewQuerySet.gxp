@@ -1,0 +1,66 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.ViewQuerySet"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.List' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.QuerySetsServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='querySetName' type='String' />
+<gxp:param name='queries' type='List{String}' />
+
+<call:Page id="querysetdetails" title='"Query Set Details"'>
+
+<gxp:eval expr='banner.write(user, QuerySetsServlet.BANNER_LINK)' />
+
+<gxp:nomsg>
+<div id="content">
+  <h2>View Query Set</h2>
+
+  <a href='querysets'>&laquo; Go Back</a>
+
+  <div id="queries">
+	  <gxp:if cond='queries.isEmpty()'>
+	    This set is empty.
+	  <gxp:else />
+	    Queries for query set
+	    <span class="querysetname">
+	      <gxp:eval expr='querySetName' />
+	    </span>:
+	
+	    <ol>
+		    <gxp:loop var='query' type='String' iterable='queries'>
+		      <li>
+		        <gxp:eval expr='query' />
+		      </li>
+		    </gxp:loop>
+	    </ol>
+	  </gxp:if>
+	</div>
+</div>
+</gxp:nomsg>
+
+</call:Page>
+</gxp:template>

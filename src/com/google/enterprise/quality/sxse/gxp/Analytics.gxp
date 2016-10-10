@@ -1,0 +1,390 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.Analytics"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.List' />
+<gxp:import class='java.util.Set' />
+<gxp:import class='com.google.enterprise.quality.sxse.QueryArguments' />
+<gxp:import class='com.google.enterprise.quality.sxse.ScoringPolicyProfile' />
+<gxp:import class='com.google.enterprise.quality.sxse.QueryFormatter' />
+<gxp:import class='com.google.enterprise.quality.sxse.QueryFormatter.FormatterType' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.AnalyticsResult' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.AnalyticsServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.AnalyticsServlet.AnalyticsFormContext' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.AnalyticsServlet.AnalyticsFormContext.Error' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+<gxp:import class='org.joda.time.DateTime'/>
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='policyProfiles' type='List{ScoringPolicyProfile}' />
+<gxp:param name='querySetNames' type='Set{String}' />
+<gxp:param name='userNames' type='Set{String}' />
+<gxp:param name='fc' type='AnalyticsFormContext' />
+
+<call:Page id='analytics' title='Analytics Results'>
+<gxp:abbr name='hasResults' type='Boolean' expr='!fc.results.isEmpty()'>
+  <script type='text/javascript'>
+    <gxp:if cond='hasResults'>
+	    function showResults() {
+	      document.getElementById('setup').style.display = 'none';
+	      document.getElementById('results').style.display = 'block';
+	    }
+	
+	    function showSetup() {
+	      document.getElementById('setup').style.display = 'block';
+	      document.getElementById('results').style.display = 'none';
+	    }
+    </gxp:if>
+    function doSelectAll(id) {
+      selectForm = document.getElementById(id);
+      for (var i = 0; i &lt; selectForm.options.length; ++i) {
+        selectForm.options[i].selected = true;
+      }
+      return false;
+    }
+
+    function doSelectNone(id) {
+      selectForm = document.getElementById(id);
+      for (var i = 0; i &lt; selectForm.options.length; ++i) {
+        selectForm.options[i].selected = false;
+      }
+      return false;
+    }
+
+    function clickDateTime(checkboxId, prefix) {
+      isChecked = document.getElementById(checkboxId).checked;
+      document.getElementById(prefix + '.year').disabled = !isChecked;
+      document.getElementById(prefix + '.month').disabled = !isChecked;
+      document.getElementById(prefix + '.day').disabled = !isChecked;
+      document.getElementById(prefix + '.hour').disabled = !isChecked;
+      document.getElementById(prefix + '.minute').disabled = !isChecked;
+    }
+  </script>
+
+<gxp:eval expr='banner.write(user, AnalyticsServlet.BANNER_LINK)' />
+
+<gxp:nomsg>
+<div id="content">
+<div id="setup">
+  <gxp:attr name='style'>
+    <gxp:if cond='hasResults'>
+      display:none
+    <gxp:else />
+      display:block
+    </gxp:if>
+  </gxp:attr>
+
+  <form action='analytics' method='post' name='/analytics'>
+
+  <div id="filters">
+	  <h2>Select Filters</h2>
+	
+	  <gxp:if cond='fc.errors.hasError(Error.FIRST_PROFILE_MISSING)'>
+	    <div class='inputerror'>
+	      <gxp:eval expr='fc.errors.getErrorMessage(Error.FIRST_PROFILE_MISSING)' />
+	    </div>
+	  </gxp:if>
+	  <gxp:if cond='fc.errors.hasError(Error.SECOND_PROFILE_MISSING)'>
+	    <div class='inputerror'>
+	      <gxp:eval expr='fc.errors.getErrorMessage(Error.SECOND_PROFILE_MISSING)' />
+	    </div>
+	  </gxp:if>
+	
+	  <table class="profileselector">
+	    <tr>
+	      <th class="radiocol">Policy A</th>
+	      <th class="radiocol">Policy B</th>
+	      <th></th>
+	    </tr>
+	    <tr>
+	      <td class="radiocol">
+	        <input type="radio" name='firstProfile' value = ''
+	            expr:checked='fc.firstProfile == null' />
+	      </td>
+	      <td class="radiocol">
+	        <input type="radio" name='secondProfile' value=''
+	            expr:checked='fc.secondProfile == null' />
+	      </td>
+	      <td>
+	        <span class="profileName">No Results</span>
+	      </td>
+	    </tr>
+	
+	    <gxp:loop var='policyProfile' type='ScoringPolicyProfile' iterable='policyProfiles'>
+	      <tr>
+	        <gxp:abbr name='policyName' type='String' expr='policyProfile.getName()'>
+	        <td class="radiocol">
+	          <input type="radio" name='firstProfile' expr:value='policyName'
+	              expr:checked='policyName.equals(fc.firstProfile)' />
+	        </td>
+	        <td class="radiocol">
+	          <input type="radio" name='secondProfile' expr:value='policyName'
+	              expr:checked='policyName.equals(fc.secondProfile)' />
+	        </td>
+	        <td>
+	          <div class="profileName"><gxp:eval expr='policyName' /></div>
+	
+	          <gxp:abbr name='queryFormatter' type='QueryFormatter'
+	              expr='policyProfile.getQueryFormatter()'>
+	          <gxp:if cond='queryFormatter.getFormatterType() == FormatterType.URL_PREFIX'>
+	            URL prefix: <gxp:eval expr='queryFormatter.getUrlPrefix()' />
+	          <gxp:elif cond='queryFormatter.getFormatterType() == FormatterType.GSA' />
+	            <gxp:abbr name='host' type='String'
+	              expr='queryFormatter.getHostQueryArgsPair().getHost()'>
+	            GSA hostname: <gxp:eval expr='host' />
+	
+	            <gxp:abbr name='queryArgs' type='QueryArguments'
+	                expr='queryFormatter.getHostQueryArgsPair().getQueryArguments()'>
+	            <gxp:abbr name='frontend' type='String'
+	                expr='queryArgs.getFrontend()'>
+	            <gxp:abbr name='collection' type='String'
+	                expr='queryArgs.getCollection()'>
+	            <gxp:abbr name='extraGet' type='String'
+	                expr='queryArgs.getExtraParams()'>
+	
+	            <gxp:if cond='frontend.equals("")'>
+	              <div class="defaultParam">
+	                No frontend specified
+	              </div>
+	            <gxp:else />
+	              <div class="assignedParam">
+	                Frontend: <gxp:eval expr='frontend' />
+	              </div>
+	            </gxp:if>
+	
+	            <gxp:if cond='collection.equals("")'>
+	              <div class="defaultParam">
+	                No collection specified
+	              </div>
+	            <gxp:else />
+	              <div class="assignedParam">
+	                Collection: <gxp:eval expr='collection' />
+	              </div>
+	            </gxp:if>
+	
+	            <gxp:if cond='extraGet.equals("")'>
+	              <div class="defaultParam">
+	                No GET parameters specified
+	              </div>
+	            <gxp:else />
+	              <div class="assignedParam">
+	                Get parameters: <gxp:eval expr='extraGet' />
+	              </div>
+	            </gxp:if>
+	
+	            </gxp:abbr>   <!-- close extraGet -->
+	            </gxp:abbr>   <!-- close frontend -->
+	            </gxp:abbr>   <!-- close collection -->
+	            </gxp:abbr>   <!-- close queryArgs -->
+	            </gxp:abbr>   <!-- close host -->
+	          </gxp:if>
+	          </gxp:abbr>
+	        </td>
+	        </gxp:abbr>   <!-- close policyName -->
+	      </tr>
+	    </gxp:loop>
+	  </table>
+
+    <gxp:if cond='fc.errors.hasError(Error.NO_QUERY_SETS_SELECTED)'>
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.NO_QUERY_SETS_SELECTED)' />
+      </div>
+    </gxp:if>
+    <gxp:if cond='fc.errors.hasError(Error.NO_USERS_SELECTED)'>
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.NO_USERS_SELECTED)' />
+      </div>
+    </gxp:if>
+
+    <div id="querysets">
+      Query sets to include:
+      <call:SelectPopulator expr:all='querySetNames'
+          expr:selected='fc.querySetNames' id='querySetNames' />
+
+      <ul class="hlist toggleall">
+        <li>
+	        <a href='#' onclick='return doSelectAll("querySetNames"); return false;'>
+	          Select All
+	        </a>
+	      </li>
+	      <li>
+		      <a href='#' onclick='return doSelectNone("querySetNames"); return false;'>
+		        Select None
+		      </a>
+		    </li>
+		  </ul>
+    </div>
+    <div id="users">
+      Users to include:
+      <call:SelectPopulator expr:all='userNames'
+          expr:selected='fc.userNames' id='userNames' />
+
+      <ul class="hlist toggleall">
+        <li>
+          <a href='#' onclick='return doSelectAll("userNames"); return false;'>
+            Select All
+          </a>
+        </li>
+        <li>
+          <a href='#' onclick='return doSelectNone("userNames"); return false;'>
+            Select None
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div id="tip">
+      (Hold the <span class="keyname">Ctrl</span> key to select multiple query sets and users.)
+    </div>
+
+    <div class="optgroup left">
+      <input type="checkbox" name='useBeginDateTime' id='useBeginDateTime' value="true"
+          onclick='clickDateTime("useBeginDateTime", "beginDateTime")'
+          expr:checked='fc.useBeginDateTime' class="left" />
+
+      <div class="left">
+        Exclude judgments made before:
+
+        <div class="opt">
+		      <call:DateTimeSelector keyString='beginDateTime'
+		          expr:dateSelected='fc.beginDateTime'
+		          beginYear='2007' endYear='2020' minutePrecision='5'
+		          expr:isDisabled='!fc.useBeginDateTime' />
+
+		      <gxp:if cond='fc.errors.hasError(Error.BAD_BEGIN_DATE)'>
+		        <div class='inputerror'>
+		          <gxp:eval expr='fc.errors.getErrorMessage(Error.BAD_BEGIN_DATE)' />
+		        </div>
+		      </gxp:if>
+        </div>
+	    </div>
+    </div>
+
+    <div class="optgroup left">
+      <input type="checkbox" name='useEndDateTime' id='useEndDateTime' value="true"
+          onclick='clickDateTime("useEndDateTime", "endDateTime")'
+          expr:checked='fc.useEndDateTime' class="left" />
+
+      <div class="left">
+	      Exclude judgments made after:
+
+        <div class="opt">
+		      <call:DateTimeSelector keyString='endDateTime'
+		          expr:dateSelected='fc.endDateTime'
+		          beginYear='2006' endYear='2020' minutePrecision='5'
+		          expr:isDisabled='!fc.useEndDateTime' />
+	
+		      <gxp:if cond='fc.errors.hasError(Error.BAD_END_DATE)'>
+		        <div class='inputerror'>
+		          <gxp:eval expr='fc.errors.getErrorMessage(Error.BAD_END_DATE)' />
+		        </div>
+		      </gxp:if>
+		      <gxp:if cond='fc.errors.hasError(Error.BAD_INTERVAL)'>
+		        <div class='inputerror'>
+		          <gxp:eval expr='fc.errors.getErrorMessage(Error.BAD_INTERVAL)' />
+		        </div>
+		      </gxp:if>
+        </div>
+	    </div>
+    </div>
+
+    <div class="optgroup">
+      <input type="checkbox" name='useMissingQueries' id='useMissingQueries'
+          value="true" expr:checked='fc.useMissingQueries' class="left" />
+      Include judgments for queries not belonging to any query set.
+    </div>
+  </div>
+
+  <div id="metrics">
+    <h2>Select Computations</h2>
+
+    <div class="optgroup">
+      <input type="checkbox" name='computeTally' id='computeTally'
+          value="true" class="left" />
+      Tally the judgments for Policy A versus Policy B
+    </div>
+
+    <div class="optgroup">
+      <input type="checkbox" name='computeProbability' id='computeProbability'
+          value="true" class="left" />
+      Compute the probabilities that each policy is better
+    </div>
+
+    <div class="buttons">
+	    <gxp:if cond='hasResults'>
+	      <a href="#" onclick='showResults(); return false;'>
+	        Return to Last Results &raquo; 
+	      </a>
+	    </gxp:if>
+
+      <input type="submit" name='compute' value="Compute" />
+    </div>
+  </div>
+
+  </form>
+</div>
+
+<gxp:if cond='hasResults'>
+  <div id="results">
+    <gxp:attr name='style'>
+      <gxp:if cond='!hasResults'>
+        display:none
+      <gxp:else />
+        display:block
+      </gxp:if>
+    </gxp:attr>
+
+    <gxp:abbr name='numResults' type='Integer' expr='fc.results.size()'>
+    <gxp:if cond='numResults == 1'>
+      1 result computed:
+    <gxp:else />
+      <gxp:eval expr='numResults' /> results computed:
+    </gxp:if>
+    </gxp:abbr>
+
+    <ul class="results">
+      <gxp:loop var='result' type='AnalyticsResult' iterable='fc.results'>
+        <li>
+	        <div class='title'>
+	          <gxp:eval expr='result.getTitle()' />:
+	        </div>
+	        <gxp:eval expr='result.writeResults()' />
+	      </li>
+      </gxp:loop>
+    </ul>
+
+    <a href="#" onclick='showSetup()'>
+      &laquo; Return to Analytics Configuration
+    </a>
+  </div>
+</gxp:if>
+
+</div>
+</gxp:nomsg>
+</gxp:abbr>
+</call:Page>
+
+</gxp:template>
+

@@ -1,0 +1,72 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.PolicyProbabilityResults"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.PolicyProbability.RangeConfidencePair' />
+<gxp:import class='java.text.DecimalFormat' />
+<gxp:import class='java.util.List' />
+
+<gxp:param name='firstPolicyName' type='String' />
+<gxp:param name='secondPolicyName' type='String' />
+<gxp:param name='firstProbability' type='Double' />
+<gxp:param name='secondProbability' type='Double' />
+<gxp:param name='reliable' type='Boolean' />
+<gxp:param name='ranges' type='List{RangeConfidencePair}' />
+
+<gxp:nomsg>
+<gxp:if cond='firstProbability &lt; 0 '>
+  No judgments were found meeting the criteria.
+<gxp:else />
+  <gxp:abbr name='confformatter' type='DecimalFormat' expr='new DecimalFormat("##0.0")'>
+  <gxp:abbr name='probformatter' type='DecimalFormat' expr='new DecimalFormat("0.000")'>
+
+  <gxp:loop var='range' type='RangeConfidencePair' iterable='ranges'>
+    <gxp:abbr name='confPct' type='Double' expr='100 * range.getConfidence()'>
+	    <div class="confidenceLevel">
+		    At <gxp:eval expr='confformatter.format(confPct)' />% confidence:
+
+        <div class="profileConfidence">
+			    <call:ProbabilityRange expr:profileName='firstPolicyName' expr:prob='firstProbability'
+			                           expr:range='range.getRange()'
+			                           expr:formatter='probformatter' />
+        </div>
+        <div class="profileConfidence">
+			    <call:ProbabilityRange expr:profileName='secondPolicyName' expr:prob='secondProbability'
+			                           expr:range='range.getRange()'
+			                           expr:formatter='probformatter' />
+        </div>
+	    </div>
+    </gxp:abbr>
+  </gxp:loop>
+
+  </gxp:abbr>
+  </gxp:abbr>
+
+  <gxp:if cond='!reliable'>
+    (Results may not be reliable due to data sparseness.)
+  </gxp:if>
+</gxp:if>
+</gxp:nomsg>
+
+</gxp:template>
+

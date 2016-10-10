@@ -1,0 +1,45 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.ClientResults"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:param name='isFirstPolicy' type='Boolean' />
+<gxp:param name='policyUri' type='String' />
+
+<gxp:nomsg>
+	<gxp:if cond='policyUri != null'>
+	  <iframe expr:src='policyUri'
+	      marginwidth="0px" marginheight="0px" frameborder="0">
+	    <gxp:attr name="class">
+	      <gxp:if cond="isFirstPolicy">
+	        a
+	      <gxp:else/>
+	        b
+	      </gxp:if>
+	    </gxp:attr>
+	    <span class="errormsg">Your browser does not support iframes.</span>
+	  </iframe>
+	<gxp:else />
+	  <span class="errormsg">No results could not be retrieved.</span>
+	</gxp:if>
+</gxp:nomsg>
+
+</gxp:template>

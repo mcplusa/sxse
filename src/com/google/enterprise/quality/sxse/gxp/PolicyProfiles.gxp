@@ -1,0 +1,546 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.PolicyProfiles"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.text.DecimalFormat' />
+<gxp:import class='java.util.List' />
+<gxp:import class='java.util.Set' />
+<gxp:import class='com.google.enterprise.quality.sxse.QueryArguments' />
+<gxp:import class='com.google.enterprise.quality.sxse.QueryFormatter' />
+<gxp:import class='com.google.enterprise.quality.sxse.QueryFormatter.FormatterType' />
+<gxp:import class='com.google.enterprise.quality.sxse.ScoringPolicyProfile' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.PolicyProfilesServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.PolicyProfilesServlet.PolicyProfilesFormContext' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.PolicyProfilesServlet.PolicyProfilesFormContext.Error' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='policyProfiles' type='List{ScoringPolicyProfile}' />
+<gxp:param name='fc' type='PolicyProfilesFormContext' />
+
+<call:Page id='profiles' title='Scoring Policy Profiles'>
+  <script type='text/javascript'>
+    function editUrlPrefixProfile(profileName, urlPrefix) {
+      <!-- Disable other div -->
+      document.getElementById('newPolicyProfile').style.display = 'none';
+      <!-- Set up fields for query set editing div -->
+      document.getElementById('updatedProfileName').value = profileName;
+      document.getElementById('updatedProfile.name').value = profileName;
+      document.getElementById('updatedProfile.urlPrefix').value = urlPrefix;
+      document.getElementById('updatedProfile.host').value = '';
+      document.getElementById('updatedProfile.frontend').value = '';
+      document.getElementById('updatedProfile.collection').value = '';
+      document.getElementById('updatedProfile.extraGet').value = '';
+      <!-- Enable policy profile editing div -->
+      document.getElementById('updatedProfile.formatterType').checked = 'checked';
+      toggleUpdateGsaInput(true);
+      toggleUpdateUrlPrefixInput(false);
+      document.getElementById('editPolicyProfile').style.display = 'block';
+    }
+
+    function editGsaProfile(profileName, host, frontend, collection, extraGet) {
+      <!-- Disable other div -->
+      document.getElementById('newPolicyProfile').style.display = 'none';
+      <!-- Set up fields for query set editing div -->
+      document.getElementById('updatedProfileName').value = profileName;
+      document.getElementById('updatedProfile.name').value = profileName;
+      document.getElementById('updatedProfile.urlPrefix').value = '';
+      document.getElementById('updatedProfile.host').value = host;
+      document.getElementById('updatedProfile.frontend').value = frontend;
+      document.getElementById('updatedProfile.collection').value = collection;
+      document.getElementById('updatedProfile.extraGet').value = extraGet;
+      <!-- Enable policy profile editing div -->
+      document.getElementById('updatedGsaFormatterType').checked = 'checked';
+      toggleUpdateGsaInput(false);
+      toggleUpdateUrlPrefixInput(true);
+      document.getElementById('editPolicyProfile').style.display = 'block';
+    }
+
+    function cancelPolicyProfileEdit() {
+      document.getElementById('newPolicyProfile').style.display = 'block';
+      document.getElementById('editPolicyProfile').style.display = 'none';
+    }
+
+    function toggleNewGsaInput(disabled) {
+      document.getElementById('newProfile.host').disabled = disabled;
+      document.getElementById('newProfile.frontend').disabled = disabled;
+      document.getElementById('newProfile.collection').disabled = disabled;
+      document.getElementById('newProfile.extraGet').disabled = disabled;
+    }
+
+    function toggleNewUrlPrefixInput(disabled) {
+      document.getElementById('newProfile.urlPrefix').disabled = disabled;
+    }
+
+    function toggleUpdateGsaInput(disabled) {
+      document.getElementById('updatedProfile.host').disabled = disabled;
+      document.getElementById('updatedProfile.frontend').disabled = disabled;
+      document.getElementById('updatedProfile.collection').disabled = disabled;
+      document.getElementById('updatedProfile.extraGet').disabled = disabled;
+    }
+
+    function toggleUpdateUrlPrefixInput(disabled) {
+      document.getElementById('updatedProfile.urlPrefix').disabled = disabled;
+    }
+
+    function deletePolicyProfile(profileName) {
+      var agree = confirm("Are you sure you want to delete this scoring policy profile?");
+      if (agree) {
+        document.getElementById('updatedProfileAction').value = "DELETE";
+        document.getElementById('updatedProfileName').value = profileName;
+        document.editPolicyProfileForm.submit();
+      }
+      return false;
+    }
+ 
+    function clickStoreResults() {
+      var storingResults = document.getElementById('storeResults').checked;
+      document.getElementById('autoSubmit').disabled = !storingResults;
+      document.getElementById('retrievalTimeout').disabled = !storingResults;
+    }
+  </script>
+
+  <gxp:eval expr='banner.write(user, PolicyProfilesServlet.BANNER_LINK)' />
+
+  <gxp:nomsg>
+  <div id="content">
+  <div id="prefs">
+    <h2 class="header">Scoring Policy Profile Preferences</h2>
+    
+    <form action='profiles' method='post' name='prefsForm'>
+
+    <gxp:if cond='fc.errors.hasError(Error.FIRST_PROFILE_INVALID)'>
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.FIRST_PROFILE_INVALID)' />
+      </div>
+    </gxp:if>
+    <gxp:if cond='fc.errors.hasError(Error.SECOND_PROFILE_INVALID)'>
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.SECOND_PROFILE_INVALID)' />
+      </div>
+    </gxp:if>
+
+    <table class="profileselector">
+      <tr>
+	      <th class="radiocol">Policy A</th>
+	      <th class="radiocol">Policy B</th>
+	      <th></th>
+      </tr>
+      <tr>
+        <td align="center" valign="middle">
+          <input type="radio" name='firstProfile' value=''
+              expr:checked='fc.firstActive == null' />
+        </td>
+        <td align="center" valign="middle">
+          <input type="radio" name='secondProfile' value=''
+              expr:checked='fc.secondActive == null' />
+        </td>
+        <td>
+          <span class="profileName">No Results</span>
+        </td>
+      </tr>
+
+      <gxp:loop var='policyProfile' type='ScoringPolicyProfile'
+          iterable='policyProfiles'>
+        <tr>
+          <gxp:abbr name='policyName' type='String' expr='policyProfile.getName()'>
+          <td class="radiocol">
+            <input type="radio" name='firstProfile' expr:value='policyName'
+                expr:checked='policyName.equals(fc.firstActive)' />
+          </td>
+          <td class="radiocol">
+            <input type="radio" name='secondProfile' expr:value='policyName'
+                expr:checked='policyName.equals(fc.secondActive)' />
+          </td>
+          <td>
+            <div class="profileName"><gxp:eval expr='policyName' /></div>
+
+            <gxp:abbr name='queryFormatter' type='QueryFormatter'
+                expr='policyProfile.getQueryFormatter()'>
+              <gxp:if cond='queryFormatter.getFormatterType() == FormatterType.URL_PREFIX'>
+                <gxp:abbr name='urlPrefix' type='String' expr='queryFormatter.getUrlPrefix()'>
+                  URL prefix: <gxp:eval expr='urlPrefix' />
+                  <ul class="hlist">
+                    <li>
+                      <a href="#">
+                        <gxp:attr name='onclick'>
+                          editUrlPrefixProfile(<gxp:eval expr='policyName' />,
+                                               <gxp:eval expr='urlPrefix' />); return false;
+                        </gxp:attr>
+                        Edit
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#">
+                        <gxp:attr name='onclick'>
+                          deletePolicyProfile(<gxp:eval expr='policyName' />); return false;
+                        </gxp:attr>
+                        Delete
+                      </a>
+                    </li>
+                  </ul>
+                </gxp:abbr>   <!-- close urlPrefix -->
+              <gxp:elif cond='queryFormatter.getFormatterType() == FormatterType.GSA' />
+                <gxp:abbr name='host' type='String'
+                  expr='queryFormatter.getHostQueryArgsPair().getHost()'>
+                GSA hostname: <gxp:eval expr='host' />
+
+                <gxp:abbr name='queryArgs' type='QueryArguments'
+                    expr='queryFormatter.getHostQueryArgsPair().getQueryArguments()'>
+                <gxp:abbr name='frontend' type='String'
+                    expr='queryArgs.getFrontend()'>
+                <gxp:abbr name='collection' type='String'
+                    expr='queryArgs.getCollection()'>
+                <gxp:abbr name='extraGet' type='String'
+                    expr='queryArgs.getExtraParams()'>
+
+                <gxp:if cond='frontend.equals("")'>
+                  <div class="defaultParam">
+                    No frontend specified
+                  </div>
+                <gxp:else />
+                  <div class="assignedParam">
+                    Frontend: <gxp:eval expr='frontend' />
+                  </div>
+                </gxp:if>
+                <gxp:if cond='collection.equals("")'>
+                  <div class="defaultParam">
+                    No collection specified
+                  </div>
+                <gxp:else />
+                  <div class="assignedParam">
+                    Collection: <gxp:eval expr='collection' />
+                  </div>
+                </gxp:if>
+                <gxp:if cond='extraGet.equals("")'>
+                  <div class="defaultParam">
+                    No GET parameters specified
+                  </div>
+                <gxp:else />
+                  <div class="assignedParam">
+                    Get parameters: <gxp:eval expr='extraGet' />
+                  </div>
+                </gxp:if>
+
+                <ul class="hlist">
+                  <li>
+                    <a href="#">
+                      <gxp:attr name='onclick'>
+                        editGsaProfile(<gxp:eval expr='policyName' />,
+                                       <gxp:eval expr='host' />,
+                                       <gxp:eval expr='frontend' />,
+                                       <gxp:eval expr='collection' />,
+                                       <gxp:eval expr='frontend' />); return false; 
+                      </gxp:attr>
+                      Edit
+                    </a>
+                  </li>
+                  <li>
+                      <a href="#">
+                        <gxp:attr name='onclick'>
+                          deletePolicyProfile(<gxp:eval expr='policyName' />); return false;
+                        </gxp:attr>
+                        Delete
+                      </a>
+                  </li>
+                </ul>
+
+                </gxp:abbr>   <!-- close extraGet -->
+                </gxp:abbr>   <!-- close frontend -->
+                </gxp:abbr>   <!-- close collection -->
+                </gxp:abbr>   <!-- close queryArgs -->
+                </gxp:abbr>   <!-- close host -->
+              </gxp:if>
+            </gxp:abbr>
+          </td>
+            </gxp:abbr>   <!-- close policyName -->
+        </tr>
+      </gxp:loop>
+    </table>
+
+    <div class="optgroup">
+      <input type="checkbox" name='shouldSwap' id='shouldSwap' value="true"
+          expr:checked='fc.shouldSwap' class="left" />
+      Swap results from Policy A and Policy B at random
+    </div>
+
+    <div class="optgroup left">
+      <input type="checkbox" name='storeResults' id='storeResults' value="true"
+          expr:checked='fc.storeResults' onclick='clickStoreResults()' class="left" />
+
+      <div class="left">
+        Store results with each judgment
+
+        <div class="opt">
+          <span class="left">Maximum time in seconds to wait for results:</span>
+          <input type="text" name='retrievalTimeout' id='retrievalTimeout'
+              expr:disabled='!fc.storeResults' 
+              expr:value='fc.retrievalTimeout' size='5' />
+
+          <gxp:if cond='fc.errors.hasError(Error.RETRIEVAL_TIMEOUT_INVALID)'>
+            <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.RETRIEVAL_TIMEOUT_INVALID)' />
+            </div>
+          </gxp:if>
+        </div>
+          
+        <div class="opt">
+          <input type="checkbox" name='autoSubmit' id='autoSubmit' value="true"
+              expr:checked='fc.autoSubmit' expr:disabled='!fc.storeResults'
+              class="left" />
+          Submit judgment automatically if equal or invalid
+        </div>
+      </div>
+    </div>
+
+    <div class="optgroup">
+      <span class="left">Maximum number of results to return:</span>
+      <input type="text" name='maxResults' id='maxResults'
+          expr:value='fc.maxResults' size='3'/>
+
+      <gxp:if cond='fc.errors.hasError(Error.MAX_RESULTS_INVALID)'>
+        <div class='inputerror'>
+          <gxp:eval expr='fc.errors.getErrorMessage(Error.MAX_RESULTS_INVALID)' />
+        </div>
+      </gxp:if>
+    </div>
+
+    <div class="buttons">
+      <input type="submit" value="Update Preferences" />
+    </div>
+    <input type="hidden" name="profileAction" value="UPDATE_ACTIVE" />
+
+    </form>
+  </div>
+
+  <!-- div for creating a policy profile -->
+  <div id="newPolicyProfile">
+    <gxp:attr name="style">
+      <gxp:if cond='!fc.hasEditError()'>
+        display:block
+      <gxp:else />
+        display:none
+      </gxp:if>
+    </gxp:attr>
+
+    <h2 class="header">Create a New Scoring Policy Profile</h2>
+
+    <form action='profiles' method='post' name='newPolicyProfileForm'>
+
+    <gxp:if cond='fc.errors.hasError(Error.NEW_PROFILE_INCOMPLETE)'>
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.NEW_PROFILE_INCOMPLETE)' />
+      </div>
+    <gxp:elif cond='fc.errors.hasError(Error.NEW_PROFILE_NAME_EXISTS)' />
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.NEW_PROFILE_NAME_EXISTS)' />
+      </div>
+    </gxp:if>
+
+    <div class="optgroup">
+      <span class="left">Profile Name:</span>
+      <input type="text" name='newProfile.name' size='30'
+          expr:value='fc.newProfile.profileName' />
+    </div>
+    
+    <div class="optgroup">
+      <input type="radio" name='newProfile.formatterType' value='URL_PREFIX'
+          expr:checked='fc.newProfile.formatterType == FormatterType.URL_PREFIX'
+          onclick='toggleNewGsaInput(true); toggleNewUrlPrefixInput(false);' class="left" />
+      <span class="formatterType left">URL prefix:</span>
+      <input type="text" name='newProfile.urlPrefix' id='newProfile.urlPrefix' size='30'
+          expr:value='fc.newProfile.urlPrefix'
+          expr:disabled='fc.newProfile.formatterType != FormatterType.URL_PREFIX' />
+    </div>
+
+    <div class="optgroup left">
+      <input type="radio" name='newProfile.formatterType' value='GSA'
+          expr:checked='fc.newProfile.formatterType == FormatterType.GSA'
+          onclick='toggleNewGsaInput(false); toggleNewUrlPrefixInput(true);' class="left" />
+      <div class="left">
+        <span class="formatterType">GSA:</span>
+        
+        <div class="opt">
+          <span class="left">Host:</span>
+          <input type="text" name='newProfile.host' id='newProfile.host' size='20'
+              expr:value='fc.newProfile.host'
+              expr:disabled='fc.newProfile.formatterType != FormatterType.GSA' />
+        </div>
+
+        <div class="opt">
+          <span class="left">Frontend:</span>
+	        <input type="text" name='newProfile.frontend' id='newProfile.frontend' size='30'
+	            expr:value='fc.newProfile.frontend'
+	            expr:disabled='fc.newProfile.formatterType != FormatterType.GSA' />
+          <gxp:if cond='fc.errors.hasError(Error.NEW_FRONTEND_INVALID)'>
+            <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.NEW_FRONTEND_INVALID)' />
+            </div>
+          </gxp:if>
+        </div>
+
+	      <div class="opt">
+	        <span class="left">Collection:</span>
+		      <input type="text" name='newProfile.collection' id='newProfile.collection' size='30'
+		          expr:value='fc.newProfile.collection'
+		          expr:disabled='fc.newProfile.formatterType != FormatterType.GSA' />
+	        <gxp:if cond='fc.errors.hasError(Error.NEW_COLLECTION_INVALID)'>
+	          <div class='inputerror'>
+	            <gxp:eval expr='fc.errors.getErrorMessage(Error.NEW_COLLECTION_INVALID)' />
+	          </div>
+	        </gxp:if>
+	      </div>
+    
+	      <div class="opt">
+	        <span class="left">GET Parameters:</span>
+	        <input type="text" name='newProfile.extraGet' id='newProfile.extraGet' size='50'
+	            expr:value='fc.newProfile.extraGetParams'
+	            expr:disabled='fc.newProfile.formatterType != FormatterType.GSA' />
+	      </div>
+	    </div>
+	  </div>
+
+    <input type="hidden" name="profileAction" id="newProfileAction" value="CREATE" />
+    <input type="hidden" id='profileName' name='profileName' >
+      <gxp:attr name="value">
+        <gxp:if cond='fc.hasEditError()'>
+          <gxp:eval expr='fc.prevProfileName' />
+        <gxp:else />
+          <gxp:eval expr='fc.newProfile.profileName' />
+        </gxp:if>
+      </gxp:attr>
+    </input>
+
+    <div class="buttons">
+	    <input type="submit" value="Create Profile" />
+	  </div>
+
+    </form>
+  </div>
+
+  <!-- div for editing a policy profile -->
+  <div id="editPolicyProfile">
+    <gxp:attr name="style">
+      <gxp:if cond='fc.hasEditError()'>
+        display:block
+      <gxp:else />
+        display:none
+      </gxp:if>
+    </gxp:attr>
+
+    <h2 class="header">Edit Scoring Policy Profile:</h2>
+
+    <form action='profiles' method='post' name='editPolicyProfileForm'>
+
+    <gxp:if cond='fc.errors.hasError(Error.EDITED_PROFILE_INCOMPLETE)'>
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.EDITED_PROFILE_INCOMPLETE)' />
+      </div>
+    <gxp:elif cond='fc.errors.hasError(Error.EDITED_PROFILE_NAME_EXISTS)' />
+      <div class='inputerror'>
+        <gxp:eval expr='fc.errors.getErrorMessage(Error.EDITED_PROFILE_NAME_EXISTS)' />
+      </div>
+    </gxp:if>
+
+    <div class="optgroup">
+      <span class="left">Profile Name:</span>
+      <input type="text" name='updatedProfile.name' id='updatedProfile.name'
+          size='30' expr:value='fc.updatedProfile.profileName' />
+    </div>
+
+    <div class="optgroup">
+      <input type="radio" name='updatedProfile.formatterType' id='updatedProfile.formatterType' value='URL_PREFIX'
+          expr:checked='fc.updatedProfile.formatterType == FormatterType.URL_PREFIX'
+          onclick='toggleUpdateGsaInput(true); toggleUpdateUrlPrefixInput(false);' class="left" />
+      <span class="formatterType left">URL prefix:</span>
+      <input type="text" name='updatedProfile.urlPrefix' id='updatedProfile.urlPrefix' size='30'
+          expr:value='fc.updatedProfile.urlPrefix'
+          expr:disabled='fc.updatedProfile.formatterType != FormatterType.URL_PREFIX' />
+    </div>
+
+    <div class="optgroup left">
+      <input type="radio" name='updatedProfile.formatterType' id='updatedGsaFormatterType' value='GSA'
+          expr:checked='fc.updatedProfile.formatterType == FormatterType.GSA'
+          onclick='toggleUpdateGsaInput(false); toggleUpdateUrlPrefixInput(true);' class="left" />
+      <div class="left">
+        <span class="formatterType">GSA:</span>
+
+        <div class="opt">
+          <span class="left">Host:</span>
+          <input type="text" name='updatedProfile.host' id='updatedProfile.host' size='20'
+              expr:value='fc.updatedProfile.host'
+              expr:disabled='fc.updatedProfile.formatterType != FormatterType.GSA' />
+        </div>
+
+        <div class="opt">
+          <span class="left">Frontend:</span>
+          <input type="text" name='updatedProfile.frontend' id='updatedProfile.frontend' size='30'
+              expr:value='fc.updatedProfile.frontend'
+              expr:disabled='fc.updatedProfile.formatterType != FormatterType.GSA' />
+          <gxp:if cond='fc.errors.hasError(Error.EDITED_FRONTEND_INVALID)'>
+            <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.EDITED_FRONTEND_INVALID)' />
+            </div>
+          </gxp:if>
+        </div>
+
+        <div class="opt">
+          <span class="left">Collection:</span>
+          <input type="text" name='updatedProfile.collection' id='updatedProfile.collection'
+              size='30' expr:value='fc.updatedProfile.collection'
+              expr:disabled='fc.updatedProfile.formatterType != FormatterType.GSA' />
+          <gxp:if cond='fc.errors.hasError(Error.EDITED_COLLECTION_INVALID)'>
+            <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.EDITED_COLLECTION_INVALID)' />
+            </div>
+          </gxp:if>
+        </div>
+
+        <div class="opt">
+          <span class="left">GET Parameters:</span>
+          <input type="text" name='updatedProfile.extraGet' id='updatedProfile.extraGet'
+              size='50' expr:value='fc.updatedProfile.extraGetParams'
+              expr:disabled='fc.updatedProfile.formatterType != FormatterType.GSA' />
+        </div>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <input type="submit" value="Save" />
+	    <button onclick="cancelPolicyProfileEdit()">
+	      Cancel
+	    </button>
+	  </div>
+
+    <input type="hidden" name="updatedProfileName" id="updatedProfileName" />
+    <input type="hidden" name="profileAction" id="updatedProfileAction" value="EDIT" />
+	  
+	  </form>
+  </div>
+	</div>
+	</gxp:nomsg>
+
+</call:Page>
+</gxp:template>

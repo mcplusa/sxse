@@ -1,0 +1,77 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.JudgmentSnapshot"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.net.URLEncoder' />
+<gxp:import class='java.util.List' />
+<gxp:import class='com.google.enterprise.quality.sxse.SearchResult' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='userName' type='String' />
+<gxp:param name='query' type='String' />
+<gxp:param name='firstProfileName' type='String' />
+<gxp:param name='secondProfileName' type='String' />
+<gxp:param name='chosenProfileName' type='String' />
+<gxp:param name='firstResults' type='List{SearchResult}' />
+<gxp:param name='secondResults' type='List{SearchResult}' />
+
+<call:Page id='snapshot' title='"Judgment Snapshot"'>
+  <gxp:eval expr='banner.write(user, UsersServlet.BANNER_LINK)' />
+
+  <gxp:nomsg>
+  <div id="results">
+	  <a expr:href='"users?userAction=VIEW&amp;userName=" +
+	      URLEncoder.encode(userName)'>
+	     &laquo; Go Back to User <gxp:eval expr='userName' />
+	  </a>
+
+	  <div class="header">
+	    Search results for <span class="query"><gxp:eval expr='query'/></span>
+	    (Judgment was <span class="judgment"><gxp:eval expr='chosenProfileName' /></span>):
+	  </div>
+	
+	  <div id="sxs">
+ 	    <div class="a">
+	      <div class="profileName">
+	        <gxp:eval expr='firstProfileName' />
+	      </div>
+
+	      <call:ServerResults expr:results='firstResults' />
+	    </div>
+	    <div class="b">
+	      <div class="profileName">
+	        <gxp:eval expr='secondProfileName' />
+	      </div>
+	
+	      <call:ServerResults expr:results='secondResults' />
+	    </div>
+	  </div>
+	</div>
+  </gxp:nomsg>
+</call:Page>
+
+</gxp:template>

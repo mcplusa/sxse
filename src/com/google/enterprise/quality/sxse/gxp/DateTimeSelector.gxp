@@ -1,0 +1,85 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.DateTimeSelector"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+  <gxp:import class='org.joda.time.DateTime'/>
+  <gxp:import class='com.google.enterprise.quality.sxse.servlet.AnalyticsServlet.AnalyticsFormContext' />
+  <gxp:import class='com.google.enterprise.quality.sxse.servlet.LongIterator' />
+
+  <gxp:param name='keyString' type='String' />
+  <gxp:param name='dateSelected' type='AnalyticsFormContext.DateTimeFields'/>
+  <gxp:param name='beginYear' type='int' default='new DateTime().getYear()' />
+  <gxp:param name='endYear' type='int' default='new DateTime().getYear() + 1' />
+  <gxp:param name='minutePrecision' type='int' default='1' />
+  <gxp:param name='isDisabled' type='Boolean' default='Boolean.FALSE' />
+
+  <gxp:nomsg>Date:</gxp:nomsg>
+  <!-- select year -->
+  <select expr:name='keyString + ".year"' expr:id='keyString + ".year"'
+      expr:disabled='isDisabled'>
+    <gxp:loop var='i' type='int' iterator='new LongIterator(beginYear, endYear+1)'>
+      <option expr:value='i' expr:selected='i == dateSelected.year'>
+        <gxp:eval expr='i' />
+      </option>
+    </gxp:loop>
+  </select>
+  <select expr:name='keyString + ".month"' expr:id='keyString + ".month"'
+      expr:disabled='isDisabled'>
+    <gxp:loop var='i' type='int' iterator='new LongIterator(0, 12)'>
+      <option expr:value='i + 1' expr:selected='(i + 1) == dateSelected.month'>
+        <gxp:eval expr='i + 1' />
+      </option>
+    </gxp:loop>
+  </select>
+  <select expr:name='keyString + ".day"' expr:id='keyString + ".day"'
+      expr:disabled='isDisabled'>
+    <gxp:loop var='i' type='int' iterator='new LongIterator(1, 32)'>
+      <option expr:value='i' expr:selected='i == dateSelected.day'>
+        <gxp:eval expr='i' />
+      </option>
+    </gxp:loop>
+  </select>
+
+  <label>
+  <gxp:nomsg>Hour:</gxp:nomsg>
+  <gxp:abbr name='hourName' type='String' expr='keyString + ".hour"'>
+  <select expr:name='hourName' expr:id='hourName' expr:disabled='isDisabled'>
+    <gxp:loop var='i' type='int' iterator='new LongIterator(0, 24)'>
+      <option expr:value='i' expr:selected='i == dateSelected.hour'>
+        <gxp:eval expr='i' />
+      </option>
+    </gxp:loop>
+  </select>
+  </gxp:abbr>
+  </label>
+  <label>
+  <gxp:nomsg>Minute:</gxp:nomsg>
+  <select expr:name='keyString + ".minute"' expr:id='keyString + ".minute"'
+      expr:disabled='isDisabled'>
+    <gxp:loop var='i' type='int' iterator='new LongIterator(0, (59 / minutePrecision) + 1)'>
+      <option expr:value='i * minutePrecision' expr:selected='i == dateSelected.minute / minutePrecision'>
+        <gxp:eval expr='i * minutePrecision' />
+      </option>
+    </gxp:loop>
+  </select>
+  </label>
+</gxp:template>

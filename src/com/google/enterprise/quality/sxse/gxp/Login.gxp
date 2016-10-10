@@ -1,0 +1,125 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.Login"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.Set' />
+<gxp:import class='com.google.enterprise.quality.sxse.input.InputErrors' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.LoginServlet.Error' />
+
+<gxp:param name='passwordHint' type='String' />
+<gxp:param name='inputErrors' type='InputErrors{Error}' />
+
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="/static/style.css" />
+  <title><gxp:nomsg>Log in</gxp:nomsg></title>
+</head>
+
+<body id="login" onload='updateTextfields()'>
+<noscript>
+  <p>
+    <gxp:nomsg>
+      Please enable JavaScript in your browser and reload this page.
+    </gxp:nomsg>
+  </p>
+</noscript>
+
+<script type='text/javascript'>
+  function updateTextfields() {
+    var assessorSelected = document.getElementById('userTypeAssessor').checked;
+    document.getElementById('username').disabled = !assessorSelected;
+    document.getElementById('password').disabled = assessorSelected;
+  }
+</script>
+
+<gxp:nomsg>
+<h1>Welcome to Side-by-Side</h1>
+
+<div id="content">
+  <form action='login' method='post'>
+	  <div class="optgroup left">
+		  <input type='radio' name='userType' id='userTypeAssessor' value='ASSESSOR'
+		         checked='checked' onclick='updateTextfields()' class="left" />
+
+		  <div class="left">
+		    <label for="userTypeAssessor">
+		      Log in as an assessor
+		    </label>
+
+	      <div class="opt">
+			    <label for="username">
+			      <span class="left">Username:</span>
+			    </label>
+	  	    <input type='text' name="username" size="16" id='username' />
+	  	  </div>
+
+		    <gxp:if cond='inputErrors.hasError(Error.INVALID_USERNAME)'>
+		      <div class="inputerror">
+		        <gxp:eval expr='inputErrors.getErrorMessage(Error.INVALID_USERNAME)' />
+		      </div>
+		    </gxp:if>
+		  </div>
+	  </div>
+	
+	  <div class="optgroup left">
+		  <input type='radio' name='userType' id='userTypeAdministrator' value='ADMINISTRATOR'
+	        onclick='updateTextfields()' class="left" />
+
+	    <div class="left">
+		    <label for="userTypeAdministrator">
+		      Log in as an administrator
+		    </label>
+
+		    <div class="opt">
+			    <label for="password">
+			      <span class="left">Password:</span>
+			    </label>
+	  	    <input type="password" name="password" size="16" id='password' />
+	  	  </div>
+
+		    <gxp:if cond="passwordHint != null">
+		      <div id="pwhint">
+		        Password hint: <gxp:eval expr="passwordHint" />
+		      </div>
+		    </gxp:if>
+
+		    <gxp:if cond="inputErrors.hasError(Error.INVALID_PASSWORD)">
+		      <div class="inputerror">
+		        <gxp:eval expr='inputErrors.getErrorMessage(Error.INVALID_PASSWORD)' />
+		      </div>
+		    </gxp:if>
+      </div>
+	  </div>
+
+    <div class="buttons">
+      <input type="submit" value="Log in" />
+    </div>
+  </form>
+</div>
+
+<div id="footer">&copy;2009 Google</div>
+</gxp:nomsg>
+
+</body>
+</html>
+
+</gxp:template>

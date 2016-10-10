@@ -1,0 +1,54 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.UserStats"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.Date' />
+<gxp:import class='java.text.DateFormat' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet.UserStatistics' />
+
+<gxp:param name='dateFormatter' type='DateFormat' />
+<gxp:param name='stats' type='UserStatistics' />
+
+<gxp:nomsg>
+<ul>
+  <gxp:if cond='stats.getNumQueries() > 0'>
+    <li>
+      First judgment was at <gxp:eval expr='dateFormatter.format(new Date(stats.getMinTimestamp()))' />
+    </li>
+    <li>
+      Last judgment was at <gxp:eval expr='dateFormatter.format(new Date(stats.getMaxTimestamp()))' /></li>
+  </gxp:if>
+
+  <gxp:abbr name='queryStr' type='String'
+      expr='(stats.getNumQueries() == 1) ? "query" : "queries"' >
+  <gxp:abbr name='judgmentStr' type='String'
+      expr='(stats.getNumJudgments() == 1) ? "judgment" : "judgments"' >
+  <li>
+    <gxp:eval expr='stats.getNumQueries()' /> <gxp:eval expr='queryStr' />
+    issued against
+    <gxp:eval expr='stats.getNumJudgments()' /> <gxp:eval expr='judgmentStr' />
+  </li>
+  </gxp:abbr>
+  </gxp:abbr>
+</ul>
+</gxp:nomsg>
+
+</gxp:template>

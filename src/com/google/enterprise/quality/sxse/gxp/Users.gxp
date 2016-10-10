@@ -1,0 +1,122 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.Users"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:form="http://google.com/2007/call/com/google/gxp/form"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.net.URLEncoder' />
+<gxp:import class='java.util.Set' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='userNames' type='Set{String}' />
+
+<call:Page id='users' title='Users'>
+  <gxp:if cond='!userNames.isEmpty()'>
+	  <script type='text/javascript'>
+	    function doCheckAll() {
+	      doCheck(true);
+	    }
+	
+	    function doCheckNone() {
+	      doCheck(false);
+	    }
+	
+	    function doCheck(checked) {
+		    var userForm = document.getElementById("userForm");
+	      for (var i = 0; i &lt; userForm.usersToDelete.length; ++i) {
+	        userForm.usersToDelete[i].checked = checked;
+	      }
+	    }
+	
+	    function deleteUsers() {
+	      var agree = confirm("Are you sure you want to delete these users?");
+	      if (agree) {
+	        document.getElementById('userAction').value = "DELETE";
+	        document.userForm.submit();
+	      }
+	      return false;
+	    }
+	  </script>
+  </gxp:if>
+
+  <gxp:eval expr='banner.write(user, UsersServlet.BANNER_LINK)' />
+
+  <gxp:nomsg>
+    <div id="content">
+      <h2>Existing Users</h2>
+
+      <gxp:if cond='userNames.isEmpty()'>
+        No assessors have judged queries yet.
+	    <gxp:else/>
+        <form action='users' method='post' id='userForm' name='userForm'>
+          <table>
+            <tr>
+              <th></th>
+              <th class="c">User Name</th>
+              <th class="c">Options</th>
+            </tr>
+            <gxp:loop var='userName' type='String' iterable='userNames'>
+              <tr>
+	              <td>
+	                <input type="checkbox" name='usersToDelete' expr:value='userName' />
+	              </td>
+	              <td>
+	                <gxp:eval expr='userName' />
+	              </td>
+	              <td>
+	                <a expr:href='"/users?userAction=VIEW&amp;userName=" +
+	                    URLEncoder.encode(userName)'>View</a>
+                </td>
+              </tr>
+            </gxp:loop>
+          </table>
+
+	        <gxp:if cond='userNames.size() > 1'>
+	          <ul class="hlist toggleall">
+	            <li>
+			          <a href="#" onclick='doCheckAll(); return false;'>Select All</a>
+	            </li>
+	            <li>
+	              <a href="#" onclick='doCheckNone(); return false;'>Select None</a>
+	            </li>
+	          </ul>
+	        </gxp:if>
+
+          <input type="hidden" id='userAction' name='userAction' />
+
+          <div class="buttons">    
+		        <button onclick='deleteUsers()'>
+		          Delete Selected
+		        </button>
+		      </div>
+        </form>
+      </gxp:if>
+    </div>
+  </gxp:nomsg>
+</call:Page>
+
+</gxp:template>
+

@@ -1,0 +1,102 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.UserHistory"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.util.List' />
+<gxp:import class='java.text.DateFormat' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet.QueryHistory' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.UsersServlet.UserStatistics' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='dateFormatter' type='DateFormat' />
+<gxp:param name='userName' type='String' />
+<gxp:param name='userHistory' type='List{QueryHistory}' />
+<gxp:param name='globalStats' type='UserStatistics' />
+<gxp:param name='profileStats' type='UserStatistics' />
+
+<call:Page id='users' title='Users'>
+  <gxp:eval expr='banner.write(user, UsersServlet.BANNER_LINK)' />
+  
+  <gxp:nomsg>
+  <div id="content">
+    <a href='/users'>&laquo; Go Back</a>
+
+	  <div class="profileSummary">
+	    Against all profiles:
+	    <call:UserStats expr:dateFormatter='dateFormatter' expr:stats='globalStats' />
+	  </div>
+	  <div class="profileSummary">
+	    Against the current profiles:
+	    <call:UserStats expr:dateFormatter='dateFormatter' expr:stats='profileStats' />
+	  </div>
+	
+	  <gxp:if cond='!userHistory.isEmpty()'>
+	    <table id="userHistory">
+		    <tr>
+		      <th>Query</th>
+		      <th>Timestamp</th>
+		      <th>Judgment</th>
+		    </tr>
+		
+		    <gxp:loop var='queryHistory' type='QueryHistory' iterable='userHistory'>
+		      <gxp:abbr name='query' type='String' expr='queryHistory.getQuery()'>
+		      <gxp:abbr name='queryJudgments'
+		          type='List{QueryHistory.QueryJudgment}' expr='queryHistory.getDetails()'>
+		
+		      <gxp:abbr name='firstJudgment' type='QueryHistory.QueryJudgment' expr='queryJudgments.get(0)'>
+		      <tr>
+		        <td expr:rowspan='queryJudgments.size()' valign='top'>
+		          <gxp:eval expr='query' />
+		        </td>
+		        <call:AdminUserJudgment expr:userName='userName'
+		            expr:dateFormatter='dateFormatter' expr:queryJudgment='firstJudgment'
+		            expr:query='query' />
+		      </tr>
+		      </gxp:abbr>
+		
+		      <gxp:abbr name='restJudgments' type='List{QueryHistory.QueryJudgment}'
+		          expr='queryJudgments.subList(1, queryJudgments.size())'>
+		      <gxp:loop var='queryJudgment' type='QueryHistory.QueryJudgment' iterable='restJudgments'>
+		        <tr>
+		          <call:AdminUserJudgment expr:userName='userName'
+		              expr:dateFormatter='dateFormatter' expr:queryJudgment='queryJudgment'
+		              expr:query='query' />
+		        </tr>
+		      </gxp:loop>
+		      </gxp:abbr>
+		
+		      </gxp:abbr>
+		      </gxp:abbr>
+		    </gxp:loop>
+	    </table>
+	  </gxp:if>
+  </div>
+  </gxp:nomsg>
+</call:Page>
+
+</gxp:template>
+

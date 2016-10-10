@@ -1,0 +1,263 @@
+<!DOCTYPE gxp:template SYSTEM "http://gxp.googlecode.com/svn/trunk/resources/xhtml.ent">
+
+<!--
+Copyright 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<gxp:template name="com.google.enterprise.quality.sxse.gxp.QuerySets"
+              xmlns="http://www.w3.org/1999/xhtml"
+              xmlns:call="http://google.com/2001/gxp/call"
+              xmlns:expr="http://google.com/2001/gxp/expressions"
+              xmlns:gxp="http://google.com/2001/gxp">
+
+<gxp:import class='java.net.URLEncoder' />
+<gxp:import class='java.util.List' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.QuerySetsServlet' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.QuerySetsServlet.QuerySetsFormContext' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.QuerySetsServlet.QuerySetsFormContext.Error' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.Banner' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.QuerySetDetails' />
+<gxp:import class='com.google.enterprise.quality.sxse.servlet.User' />
+
+<gxp:param name='user' type='User' />
+<gxp:param name='banner' type='Banner' />
+<gxp:param name='querySetDetails' type='List{QuerySetDetails}' />
+<gxp:param name='preferUnjudged' type='Boolean' />
+<gxp:param name='showQuerySets' type='Boolean' />
+<gxp:param name='fc' type='QuerySetsFormContext' />
+
+<call:Page id='querysets' title='Query Sets'>
+  <script type='text/javascript'>
+    function renameQuerySet(setName) {
+      // setName is defined in editQuerySetForm
+      document.getElementById('setName').value = setName;
+      document.getElementById('updatedSetName').value = setName;
+
+      document.getElementById('createQuerySet').style.display = 'none';
+      document.getElementById('editQuerySet').style.display = 'block';
+    }
+
+    function cancelQuerySetRename() {
+      document.getElementById('createQuerySet').style.display = 'block';
+      document.getElementById('editQuerySet').style.display = 'none';
+    }
+
+    function deleteQuerySet(setName) {
+      var agree = confirm("Are you sure you want to delete this query set?");
+      if (agree) {
+        // setAction and setName are defined in editQuerySetForm
+        document.getElementById('setAction').value = "DELETE";
+        document.getElementById('setName').value = setName;
+        document.editQuerySetForm.submit();
+      }
+      return false;
+    }
+
+    function doCheckAll() {
+      doCheck(true);
+    }
+
+    function doCheckNone() {
+      doCheck(false);
+    }
+
+    function doCheck(checked) {
+      var numCheckboxes = document.prefsForm.querySetsToMakeActive.length;
+      for (var i = 0; i &lt; numCheckboxes; ++i) {
+        document.prefsForm.querySetsToMakeActive[i].checked = checked;
+      }
+    }
+  </script>
+
+  <gxp:eval expr='banner.write(user, QuerySetsServlet.BANNER_LINK)' />
+  
+  <gxp:nomsg>
+  <div id="content">
+    <div id="prefs">
+	    <h2>Query Set Preferences</h2>  
+	
+	    <form action='querysets' method='post' name='prefsForm'>
+	      <gxp:if cond='querySetDetails.isEmpty()'>
+	        No query sets exist yet.
+	      <gxp:else/>
+	        <gxp:if cond='fc.errors.hasError(Error.RENAMED_QUERY_SET_NAME_INVALID)' >
+	          <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.RENAMED_QUERY_SET_NAME_INVALID)' />
+            </div>
+	        <gxp:elif cond='fc.errors.hasError(Error.QUERY_SET_RENAME_FAILED)' />
+	          <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.QUERY_SET_RENAME_FAILED)' />
+            </div>
+	        <gxp:elif cond='fc.errors.hasError(Error.QUERY_SET_VIEW_FAILED)' />
+	          <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.QUERY_SET_VIEW_FAILED)' />
+            </div>
+	        <gxp:elif cond='fc.errors.hasError(Error.NO_QUERY_SET_ACTIVE)' />
+	          <div class='inputerror'>
+              <gxp:eval expr='fc.errors.getErrorMessage(Error.NO_QUERY_SET_ACTIVE)' />
+            </div>
+	        </gxp:if>
+	
+	        <table>
+	          <tr>
+	            <th>Query set name</th>
+	            <th>Options</th>
+	            <th>Active</th>
+	          </tr>
+	          <gxp:loop var='detail' type='QuerySetDetails' iterable='querySetDetails'>
+	            <tr>
+	              <gxp:abbr name='querySetName' type='String' expr='detail.getQuerySetName()'>
+	              <td>
+	                <gxp:eval expr='querySetName' />
+	              </td>
+	              <td>
+	                <ul class="hlist">
+	                  <li>
+			                <a>
+			                  <gxp:attr name='href'>
+			                      querysets?setAction=VIEW&amp;setName=<gxp:eval expr='querySetName' />
+			                  </gxp:attr>
+			                  View
+			                </a>
+		                </li>
+		                <li>
+			                <a href="#">
+			                  <gxp:attr name='onclick'>
+			                      renameQuerySet(<gxp:eval expr='querySetName' />); return false;
+			                  </gxp:attr>
+			                  Rename
+			                </a>
+	                  </li>
+	                  <li>
+			                <a href="#">
+		                    <gxp:attr name='onclick'>
+			                      deleteQuerySet(<gxp:eval expr='querySetName' />); return false;
+			                  </gxp:attr>
+			                  Delete
+		                  </a>
+	                  </li>
+	                </ul>
+	              </td>
+	              <td>
+	                <input type="checkbox" name='querySetsToMakeActive'
+	                    expr:value='querySetName' expr:checked='detail.isActive()' />
+	              </td>
+	              </gxp:abbr>
+	            </tr>
+	          </gxp:loop>
+	        </table>
+	
+	        <gxp:if cond='querySetDetails.size() > 1'>
+            <ul class="hlist toggleall">
+              <li>
+                <a href="#" onclick='doCheckAll(); return false;'>Select All</a>
+              </li>
+              <li>
+                <a href="#" onclick='doCheckNone(); return false;'>Select None</a>
+              </li>
+            </ul>
+	        </gxp:if>
+	      </gxp:if>
+	
+	      <div class="opt">
+	        <input type="checkbox" name='preferUnjudged' id='preferUnjudged'
+	            value="true" expr:checked='preferUnjudged' />
+	        <label for="preferUnjudged">
+	          Prefer unjudged queries
+	        </label>
+	      </div>
+	
+	      <div class="opt">
+	        <input type="checkbox" name='showQuerySets' id='showQuerySets'
+	            value="true" expr:checked='showQuerySets' />
+	        <label for="showQuerySets">
+	          Show active query set names to assessor
+	        </label>
+	      </div>
+	
+        <input type="hidden" name='setAction' value='UPDATE_PREFS' />
+        <div class="buttons">
+	        <input type="submit" value="Update Preferences" />
+	      </div>
+	    </form>
+    </div>
+
+    <div id="createQuerySet">
+      <h2>Create a New Query Set</h2>
+        
+      <form action='querysets' method='post' name='createQuerySetForm'
+          enctype='multipart/form-data'>
+	      <gxp:if cond='fc.errors.hasError(Error.NO_FILE_UPLOADED)'>
+	        <div class='inputerror'>
+            <gxp:eval expr='fc.errors.getErrorMessage(Error.NO_FILE_UPLOADED)' />
+          </div>
+	      <gxp:elif cond='fc.errors.hasError(Error.NEW_QUERY_SET_NAME_INVALID)' />
+	        <div class='inputerror'>
+            <gxp:eval expr='fc.errors.getErrorMessage(Error.NEW_QUERY_SET_NAME_INVALID)' />
+          </div>
+	      <gxp:elif cond='fc.errors.hasError(Error.NEW_QUERY_SET_NAME_EXISTS)' />
+	        <div class='inputerror'>
+            <gxp:eval expr='fc.errors.getErrorMessage(Error.NEW_QUERY_SET_NAME_EXISTS)' />
+          </div>
+	      </gxp:if>
+
+        <div class="opt">
+          <label for="newSetName">
+            Set name:
+          </label>
+          <input type="textfield" name='newSetName' id='newSetName' size='20' expr:value='fc.newSetName' />
+        </div>
+
+        <div class="opt">
+	        Location:
+	        <input type="file" name="fileName" id="fileName" size='30' />
+        </div>
+
+        <input type="hidden" name='setAction' value='CREATE' />
+        <div class="buttons">
+          <input type="submit" value="Create Set" />
+        </div>
+      </form>
+    </div>
+
+    <div id="editQuerySet">
+      <h2>Rename an Existing Query Set</h2>
+
+      <form action='querysets' method='post' name='editQuerySetForm'>
+        <div class="optgroup">
+          <label for="updatedSetName">
+            New set name:
+          </label>
+          <input type="textfield" size="30" name='updatedSetName' id='updatedSetName' />
+        </div>
+
+        <!-- setName also used when deleting -->
+        <input type="hidden" id='setName' name='setName' />
+        <input type="hidden" id='setAction' name='setAction' value='RENAME' />
+
+        <div class="buttons">
+	        <input type="submit" value="Rename" />
+	        <button type="button" onclick="cancelQuerySetRename()">
+	          Cancel
+	        </button>
+	      </div>
+      </form>
+    </div>
+  </div>
+  </gxp:nomsg>
+</call:Page>
+
+</gxp:template>
+
