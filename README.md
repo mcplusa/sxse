@@ -11,3 +11,5 @@ or instance, you could compare: * The results coming back from 2 different GSAs.
 4. After voters have voted on the policies, tool will let you know which policy received the most votes, the probabilities and confidence intervals that any given policy is actually better than the other, and whether there is enough data for the comparison to be statistically significant.
 5. Tool can randomize which set of results shows up on which side so that users don't get biased after many votes.
 6. Voters can login and see their vote history and even change previous votes.
+
+![alt text](https://raw.githubusercontent.com/mcplusa/sxse/master/downloads/images/side-by-side.jpg "Side by Side Search In Action")
